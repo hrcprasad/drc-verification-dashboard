@@ -85,7 +85,10 @@ if uploaded_files:
         # 4. Detailed View and Export
         with st.expander("View Raw Data"):
             st.dataframe(master_df)
-            csv = master_df.to_csv(index=False).encode('utf-8')
-            st.download_button("Download Full CSV", data=csv, file_name="drc_full_report.csv", mime="text/csv")
+
+        # Download button OUTSIDE the expander
+        csv = master_df.to_csv(index=False).encode('utf-8')
+        st.download_button("⬇️ Download Full CSV", data=csv,
+                   file_name="drc_full_report.csv", mime="text/csv")
     else:
         st.warning("No DRC violations found in the uploaded files.")
