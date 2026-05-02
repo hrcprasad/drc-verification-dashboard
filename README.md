@@ -20,7 +20,7 @@ The tool utilizes a modular Python-based parser designed to ingest raw `.rpt` or
 
 
 ### 2. Convergence Forecasting via Linear Regression
-The core of the methodology is the **Convergence Slope Analysis**[cite: 3]. By tracking violation counts across multiple ECO runs, the tool applies an **Ordinary Least Squares (OLS)** linear regression model to predict the "Zero-Violation" intercept.
+The core of the methodology is the **Convergence Slope Analysis**. By tracking violation counts across multiple ECO runs, the tool applies an **Ordinary Least Squares (OLS)** linear regression model to predict the "Zero-Violation" intercept.
 
 The model minimizes the sum of squared residuals:
 
