@@ -1,5 +1,5 @@
 ## 📁 File Structure
-
+"""
 drc-verification-dashboard/
 ├── app.py # Main Streamlit dashboard
 ├── DRC_Parser.py # Standalone DRC .rpt file parser
@@ -7,7 +7,7 @@ drc-verification-dashboard/
 ├── requirements.txt # Python dependencies
 ├── README.md # Project documentation
 └── .gitignore # Ignores duplicate/temp files
-
+"""
 ## 🚀 How to Run
 
 ### 1. Clone the repo
