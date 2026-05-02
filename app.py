@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 import io
+import plotly.express as px
 
 # Severity classification
 
@@ -90,12 +91,56 @@ if uploaded_files:
         st.table(block_totals)
 
         # 3. Categorized Breakdown
-        st.subheader("Violations by Category")
-        category_pivot = master_df.pivot_table(
-            index='filename', columns='Category', values='count',
-            aggfunc='sum', fill_value=0
+        st.subheader("Violations by Category and Severity")
+
+        category_df = (
+            master_df.groupby(['Category', 'severity'])['count']
+            .sum().reset_index()
+)
+
+        fig1 = px.bar(
+            category_df,
+            x='Category', y='count', color='severity',
+            color_discrete_map={
+            'CRITICAL': '#ef4444',
+            'WARNING':  '#f97316',
+            'INFO':     '#22c55e'
+            },
+            labels={'count': 'Violation Count', 'Category': 'Rule Category'},
+            title='DRC Violations by Category and Severity'
         )
-        st.bar_chart(category_pivot)
+        fig1.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color='white',
+            legend_title='Severity'
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+        # Layer-level breakdown
+        st.subheader("Violations by Layer")
+        layer_df = (
+            master_df.groupby(['layer', 'severity'])['count']
+            .sum().reset_index()
+            .sort_values('count', ascending=False)
+        )
+        fig2 = px.bar(
+            layer_df,
+            x='layer', y='count', color='severity',
+            color_discrete_map={
+                'CRITICAL': '#ef4444',
+                'WARNING':  '#f97316',
+                'INFO':     '#22c55e'
+            },
+            labels={'count': 'Violation Count', 'layer': 'Layer'},
+            title='DRC Violations by Layer'
+        )
+        fig2.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color='white'
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
 
         # 4. Detailed View and Export
         with st.expander("View Raw Data"):
