@@ -3,6 +3,18 @@ import pandas as pd
 import re
 import io
 
+# Severity classification
+
+CRITICAL_RULES = ['SPACE', 'ENCL', 'WIDTH', 'ANTENNA', 'PITCH']
+
+def get_severity(rule: str, count: int) -> str:
+    rule_upper = rule.upper()
+    if any(p in rule_upper for p in CRITICAL_RULES) and count > 10:
+        return 'CRITICAL'
+    elif count > 0:
+        return 'WARNING'
+    return 'INFO'
+
 # --- Core Logic: Parsing and Categorization ---
 def parse_drc_content(content, filename):
     data = []
@@ -30,6 +42,7 @@ def parse_drc_content(content, filename):
                 entry['Category'] = 'Enclosure'
             else:
                 entry['Category'] = 'General'
+            entry['severity'] = get_severity(entry['rule'], int(entry['count']))
             data.append(entry)
     return data
 
@@ -60,7 +73,9 @@ if uploaded_files:
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Blocks", num_files)
         col2.metric("Total Violations", total_errors)
-        col3.metric("Status", "READY" if total_errors == 0 else "ACTION REQUIRED")
+        #col3.metric("Status", "READY" if total_errors == 0 else "ACTION REQUIRED")
+        critical_count = master_df[master_df['severity'] == 'CRITICAL']['count'].sum()
+        col3.metric("Status", "✅ READY" if critical_count == 0 else f"🚨 {critical_count} CRITICAL")
 
         # 2. Block-Level Status Table
         st.subheader("Block Status Summary")
