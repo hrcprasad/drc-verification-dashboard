@@ -3,6 +3,7 @@ import pandas as pd
 import re
 import io
 import plotly.express as px
+import numpy as np
 
 # Severity classification
 
@@ -141,6 +142,81 @@ if uploaded_files:
         )
         st.plotly_chart(fig2, use_container_width=True)
 
+        # ── 4. ECO Convergence Trend (multi-file only) ─────────────────────
+        if len(uploaded_files) > 1:
+            st.subheader("📉 ECO Convergence Trend")
+            st.caption("Upload multiple ECO run reports to track closure progress.")
+
+            # Total violations per run
+            trend_df = (
+                master_df.groupby('filename')['count']
+                .sum().reset_index()
+                .rename(columns={'filename': 'run', 'count': 'total_violations'})
+            )
+
+            # Critical violations per run
+            critical_trend = (
+                master_df[master_df['severity'] == 'CRITICAL']
+                .groupby('filename')['count']
+                .sum().reset_index()
+                .rename(columns={'filename': 'run', 'count': 'critical_violations'})
+            )
+
+            trend_df = trend_df.merge(critical_trend, on='run', how='left').fillna(0)
+            trend_df['critical_violations'] = trend_df['critical_violations'].astype(int)
+
+            # ── Linear regression prediction ───────────────────────────────
+            x = np.arange(len(trend_df))
+            y = trend_df['critical_violations'].values
+            slope, intercept = np.polyfit(x, y, 1)
+
+            if slope < 0:
+                runs_to_zero = -intercept / slope
+                remaining = max(0, runs_to_zero - len(x))
+                st.info(
+                    f"📊 **Convergence Prediction:** At current rate, "
+                    f"approximately **{remaining:.1f} more ECO run(s)** needed "
+                    f"to reach 0 critical violations."
+                )
+            elif slope == 0:
+                st.warning("⚠️ No improvement detected across runs — violations are flat.")
+            else:
+                st.error("🚨 Violations are increasing across runs — regression detected!")
+
+            # ── Trend line chart ───────────────────────────────────────────
+            fig3 = px.line(
+                trend_df,
+                x='run',
+                y=['total_violations', 'critical_violations'],
+                markers=True,
+                labels={'value': 'Violation Count', 'run': 'ECO Run', 'variable': 'Type'},
+                title='Violation Convergence Across ECO Runs',
+                color_discrete_map={
+                    'total_violations':    '#f97316',
+                    'critical_violations': '#ef4444'
+                }
+            )
+            fig3.update_layout(
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                font_color='white',
+                legend_title='Violation Type'
+            )
+            st.plotly_chart(fig3, use_container_width=True)
+
+            # ── Run delta table ────────────────────────────────────────────
+            st.subheader("Run-over-Run Delta")
+            trend_df['delta'] = trend_df['critical_violations'].diff().fillna(0).astype(int)
+            trend_df['trend'] = trend_df['delta'].apply(
+                lambda d: '🟢 IMPROVING' if d < 0 else ('🔴 REGRESSING' if d > 0 else '🟡 FLAT')
+            )
+            st.dataframe(
+                trend_df[['run', 'total_violations', 'critical_violations', 'delta', 'trend']],
+                use_container_width=True
+            )
+
+        else:
+            st.info("💡 Upload multiple ECO run reports to unlock convergence trend analysis.")
 
         # 4. Detailed View and Export
         with st.expander("View Raw Data"):
